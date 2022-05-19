@@ -48,7 +48,7 @@ def unzip(product):
             filtered_files.extend(filtered_files_part)
         opened_files = [satelite_zip.open(filtered_file) for filtered_file in filtered_files]
 
-def agriculture(pixels_dict):
+def vegetation(pixels_dict):
     agri = numpy.nan_to_num(((pixels_dict['B08']-pixels_dict['B04'])/(pixels_dict['B08']+pixels_dict['B04'])))
     return agri
 
@@ -56,7 +56,36 @@ def moisture(pixels_dict):
     moist = numpy.nan_to_num((pixels_dict['B8A']-pixels_dict['B11'])/(pixels_dict['B8A']+pixels_dict['B11']))
     return moist
 
+def plot_vege_moist(file):
+        pixs = get_pixels_from_files(file)
+        moistIndex = moisture(pixs)
+        vegeIndex= vegetation(pixs)
+        frame = pd.concat([pd.Series(moistIndex.flatten()),pd.Series(vegeIndex.flatten())],axis=1).groupby(0).mean()
+        print(frame)
+        frame.plot(legend=False)
+        plt.xlabel('Indeks wilgotności')
+        plt.ylabel('Indeks wegetacji')
+        plt.show()
+        #Image.fromarray(vegeIndex,'L').show()
+        #Image.frombytes('L',(5490,5490),vegeIndex).show()
 
+
+def find_products(api,geojson_path,date1,date2):
+     # download single scene by known product id
+    # api.download('21d68494-012e-4416-b5a4-810959b00d4e')
+
+    # search by polygon, time, and Hub query keywords
+    footprint = geojson_to_wkt(read_geojson(geojson_path)) #'geojson/river_deltas.geojson'
+    products = api.query(footprint, date=(date1,date2 ),     #'20211219', date(2021, 12, 29)   
+                         platformname='Sentinel-2',
+                         cloudcoverpercentage=(0, 30),)
+    # products = api.query(footprint, date=('20211219', date(2021, 12, 29)),
+    #                      platformname='Sentinel-2',
+    #                      cloudcoverpercentage=(0, 30),
+    #                      limit=1)
+    # print(len(products))
+    # print(products)
+    return products
 
 # Press the green button in the gutter to run the script.
 if __name__ == '__main__':
@@ -64,36 +93,14 @@ if __name__ == '__main__':
     # connect to the API
     api = SentinelAPI(os.environ.get("USER"), os.environ.get("PASSWORD"), 'https://apihub.copernicus.eu/apihub')
 
-    # download single scene by known product id
-    # api.download('21d68494-012e-4416-b5a4-810959b00d4e')
-
-    # search by polygon, time, and Hub query keywords
-    footprint = geojson_to_wkt(read_geojson('geojson/river_deltas.geojson'))
-    products = api.query(footprint, date=('20211219', date(2021, 12, 29)),
-                         platformname='Sentinel-2',
-                         cloudcoverpercentage=(0, 30),)
-    # products= [{"title":"S2A_MSIL2A_20211228T230821_N0301_R015_T49CEN_20211229T021039" }]
-    # products = api.query(footprint, date=('20211219', date(2021, 12, 29)),
-    #                      platformname='Sentinel-2',
-    #                      cloudcoverpercentage=(0, 30),
-    #                      limit=1)
-
-    # print(len(products))
-    # print(products)
+    products = find_products(api,'geojson/river_deltas.geojson','20211219',date(2021, 12, 29))
     #this downloads 1 product
     productDWN = next(iter(products))
-    #api.download(productDWN)
+    #api.download(productDWN) #działa do pobierania ale nie ma z tego title żeby przekazać dalej xd
     # print(productDWN)
-    # exit(0)
-    pixs = get_pixels_from_files("S2B_MSIL2A_20211227T084249_N0301_R064_T36RUV_20211227T105048")
-    moistIndex = moisture(pixs)
-    vegeIndex= agriculture(pixs)
-    frame = pd.concat([pd.Series(moistIndex.flatten()),pd.Series(vegeIndex.flatten())],axis=1).groupby(0).mean()
-    print(frame)
-    frame.plot()
-    plt.show()
-    #Image.fromarray(vegeIndex,'L').show()
-    #Image.frombytes('L',(5490,5490),vegeIndex).show()
+
+    plot_vege_moist("S2A_MSIL2A_20211228T230821_N0301_R015_T49CEN_20211229T021039") #tu tymczasowo na sztywno, ogarniemy dalej automatyzacje
+    
 
     
 
