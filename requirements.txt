@@ -1,2 +1,4 @@
 sentinelsat==1.1.1
 python-dotenv==0.20.0
+numpy
+pillow
