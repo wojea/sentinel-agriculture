@@ -63,20 +63,6 @@ def moisture(pixels_dict):
     return moist
 
 
-def plot_vege_moist(pixs):
-        print(pixs)
-        moistIndex = moisture(pixs)
-        vegeIndex= vegetation(pixs)
-        frame = pd.concat([pd.Series(moistIndex.flatten()),pd.Series(vegeIndex.flatten())],axis=1).groupby(0).mean()
-        print(frame)
-        frame.plot(legend=False)
-        plt.xlabel('Indeks wilgotności')
-        plt.ylabel('Indeks wegetacji')
-        plt.show()
-        #Image.fromarray(vegeIndex,'L').show()
-        #Image.frombytes('L',(5490,5490),vegeIndex).show()
-
-
 def find_products(api,geojson_path,date1,date2):
      # download single scene by known product id
     # api.download('21d68494-012e-4416-b5a4-810959b00d4e')
@@ -125,15 +111,68 @@ def extract_frames_to_gzips(api, products, limit):
                 print(products[item]['generationdate'])
 
 
+def plot_vege_moist(frame):
+    frame.plot(legend=False)
+    plt.xlabel('Indeks wilgotności')
+    plt.ylabel('Indeks wegetacji')
+    plt.show()
+    # Image.fromarray(vegeIndex,'L').show()
+    # Image.frombytes('L',(5490,5490),vegeIndex).show()
+
+
+def plot_time_plot(dates, frames):
+    labels = dates
+    maxes = []
+    averages = []
+
+    for frame in frames:
+        frame.reset_index(inplace=True)
+        max = frame[frame[1] == frame[1].max()].values.flatten().tolist()
+        print(max)
+        maxes.append(max[1])
+        averages.append(max[0])
+
+    x = numpy.arange(len(labels))  # the label locations
+    width = 0.35  # the width of the bars
+
+    fig, ax = plt.subplots()
+    rects1 = ax.bar(x - width / 2, maxes, width, label='Wegetacja')
+    rects2 = ax.bar(x + width / 2, averages, width, label='Wilgotność')
+
+    # Add some text for labels, title and custom x-axis tick labels, etc.
+    ax.set_ylabel('Wartość')
+    ax.set_title('Wilgotność i wegetacja wg daty')
+    ax.set_xticks(x, labels)
+    ax.legend()
+
+    ax.bar_label(rects1, padding=3)
+    ax.bar_label(rects2, padding=3)
+
+    fig.tight_layout()
+
+    plt.show()
+
 
 def plot_results(directory):
+    #pixels_dictionaries = list()
+    frames = list()
+    dates = list()
     for filename in os.listdir(directory):
+        date = filename.split("_")[-1].split(".")[0]
+        dates.append(date)
+        print(date)
         f = os.path.join(directory, filename)
-        print(f)
         if os.path.isfile(f):
             with open(f, 'rb') as opened:
                 pixels_dictionary = pickle.load(opened)
-                plot_vege_moist(pixels_dictionary)
+                #pixels_dictionaries.append(pixels_dictionary)
+                moistIndex = moisture(pixels_dictionary)
+                vegeIndex = vegetation(pixels_dictionary)
+                frame = pd.concat([pd.Series(moistIndex.flatten()), pd.Series(vegeIndex.flatten())], axis=1).groupby(
+                    0).mean()
+                frames.append(frame)
+                # plot_vege_moist(frame)
+    plot_time_plot(dates, frames)
 
 
 # Press the green button in the gutter to run the script.
@@ -142,9 +181,9 @@ if __name__ == '__main__':
     # connect to the API
     api = SentinelAPI(os.environ.get("USER"), os.environ.get("PASSWORD"), 'https://apihub.copernicus.eu/apihub')
 
-    products = find_products(api, 'geojson/river_deltas.geojson', '20211219', date(2022, 4, 29))
-    extract_frames_to_gzips(api, products, 3)
-    #plot_results('./outputData')
+    # products = find_products(api, 'geojson/river_deltas.geojson', '20211219', date(2022, 4, 29))
+    # extract_frames_to_gzips(api, products, 3)
+    plot_results('./outputData')
 
     #products2 = find_products(api,'geojson/river_deltas.geojson','20220119',date(2022, 3, 29))
     #products.update(products2)
