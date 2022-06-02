@@ -93,13 +93,24 @@ if __name__ == '__main__':
     # connect to the API
     api = SentinelAPI(os.environ.get("USER"), os.environ.get("PASSWORD"), 'https://apihub.copernicus.eu/apihub')
 
-    products = find_products(api,'geojson/river_deltas.geojson','20211219',date(2021, 12, 29))
+    products = find_products(api,'geojson/river_deltas.geojson','20211219',date(2022, 4, 29))
+    #products2 = find_products(api,'geojson/river_deltas.geojson','20220119',date(2022, 3, 29))
+    #products.update(products2)
+    #print(products)
     #this downloads 1 product
     productDWN = next(iter(products))
-    #api.download(productDWN) #działa do pobierania ale nie ma z tego title żeby przekazać dalej xd
+    productFileName = products[productDWN]['identifier']
+    productPrint = products[productDWN]['footprint']
+    for item in products:
+        #print(item)
+        if(products[item]['footprint'] == productPrint):
+            print(products[item]['generationdate'])
+    #print(productFileName)
+    exit(0)
+    #api.download(productDWN) #ogarniete title juz
     # print(productDWN)
 
-    plot_vege_moist("S2A_MSIL2A_20211228T230821_N0301_R015_T49CEN_20211229T021039") #tu tymczasowo na sztywno, ogarniemy dalej automatyzacje
+    #plot_vege_moist("S2A_MSIL2A_20211228T230821_N0301_R015_T49CEN_20211229T021039") #tu tymczasowo na sztywno, ogarniemy dalej automatyzacje
     
 
     
